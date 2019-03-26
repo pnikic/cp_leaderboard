@@ -35,6 +35,15 @@ var done = Array.from(user_cf, x => 0)
 var done_rat = 0;
 var success = false;
 
+function waitPromise(ms) {
+    // Source: https://stackoverflow.com/questions/24928846/get-return-value-from-settimeout
+    return new Promise(function(resolve, reject) {
+        setTimeout(function() {
+            resolve('Done')
+        }, ms)
+    });
+}
+
 function timeout(ms, promise) {
     // Source: https://stackoverflow.com/questions/46946380/fetch-api-request-timeout
     return new Promise(function(resolve, reject) {
@@ -45,28 +54,34 @@ function timeout(ms, promise) {
     })
 }
 
-function fetchRatings(retries = 20) {
+function fetchRatings(retries = 25) {
     if (!retries) {
         return Promise.reject("Promise retries depleted");
     }
-    
+
     return timeout(2000, fetch('https://codeforces.com/api/user.info?handles=' + user_cf.join(';')))
         .then(res => {
             return res.json();
         })
         .then(data => {
-            if (data['status'] == "FAILED")
-                return fetchRatings(retries - 1);
-            
-            ratings_data = data;
-            done_rat = 1;
+            if (data['status'] == "FAILED") {
+                return waitPromise(500).then(function(res) {
+                    return fetchRatings(retries - 1);
+                });
+            }
+            else {
+                ratings_data = data;
+                done_rat = 1;
+            }
         })
-        .catch(err => {
-            return fetchRatings(retries - 1);
+        .catch(err => {  
+            return waitPromise(500).then(function(res) {
+                return fetchRatings(retries - 1);
+            });
         })
 }
 
-function fetch_user(mode, i, retries = 20) {
+function fetch_user(mode, i, retries = 25) {
     // Tries to fullfill the Promise returned by fetch(...) a number of times
     if (!retries) {
         return Promise.reject("Promise retries depleted");
@@ -86,8 +101,11 @@ function fetch_user(mode, i, retries = 20) {
         })
         .then(data => {
             if (mode == 'cf') {
-                if (data['status'] == "FAILED")
-                    return fetch_user(mode, i, retries - 1);
+                if (data['status'] == "FAILED") {
+                    return waitPromise(500).then(function(res) {
+                        return fetch_user(mode, i, retries - 1);
+                    });
+                }
                 
                 cf_user_data[i] = data;
                 done[i] = 1;
@@ -98,11 +116,13 @@ function fetch_user(mode, i, retries = 20) {
                 icpc_ac[i] = data[0]['ac'], icpc_ac_newest[i] = data[0]['activity'][1];
         })
         .catch(err => {
-            return fetch_user(mode, i, retries - 1);  
+            return waitPromise(500).then(function(res) {
+                return fetch_user(mode, i, retries - 1);
+            });
         });
 }
 
-function parse_user_data(d) {
+function parse_user_data(d, cb) {
     now = Date.now();
     
     for (var i = 0; i < user_name.length; ++i)
@@ -121,15 +141,19 @@ function parse_user_data(d) {
             }
         }
     }
+
+    cb();
 }
 
-function parse_ratings_data(d) {
+function parse_ratings_data(d, cb) {
     for (i in d['result'])
     {
         var cf_idx = user_cf.indexOf(d['result'][i]['handle']);
         rating[cf_idx] = d['result'][i]['rating'];
         //rating[cf_idx] = d['result'][i]['maxRating'];
     }
+
+    cb();
 }
 
 function sort_with_indices(toSort) {
@@ -211,7 +235,7 @@ setInterval(function() {
 
     // New iteration of fetching data
     success = false;
-    done_rat = false;
+    done_rat = 0;
     done = Array.from(user_cf, x => 0)
     
     fetchRatings()
@@ -256,12 +280,13 @@ setInterval(function() {
         }
         
         if (good == done.length && done_rat == 1) {
-            parse_ratings_data(ratings_data);
-            parse_user_data(cf_user_data);
+            parse_ratings_data(ratings_data, function() {
+                parse_user_data(cf_user_data, print_data);
+            });
             
-            setTimeout(() => {
-                print_data(); // Usually triggers 'success = true'
-            }, 3000);
+            // setTimeout(() => {
+            //     print_data(); // Usually triggers 'success = true'
+            // }, 3000);
         }
     }
-}, 5000)
+}, 1000)
