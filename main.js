@@ -1,6 +1,12 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
-const log_file = '/home1/studenti/pnikic/public_html/ldr/LOG.txt'
+const log_file = 'LOG.txt'
+const result_path = ''
+const out_file = 'results.json';
+const out_newest_file = 'result_newest.json';
+const out_time_file = 'results_time.txt';
+const waitTime = 2000; // Waiting time between two successive requests
+const maxTime = 2000; // Maximum time for a request
 
 // Contestants
 var user_name = ['Mislav Blažević', 'Matej Kroflin', 'Patrick Nikić', 'Antonio Jovanović',
@@ -59,13 +65,18 @@ function fetchRatings(retries = 25) {
         return Promise.reject("Promise retries depleted");
     }
 
-    return timeout(2000, fetch('https://codeforces.com/api/user.info?handles=' + user_cf.join(';')))
+    // user_cf.filter(Boolean)
+    return timeout(maxTime, fetch('https://codeforces.com/api/user.info?handles=' + user_cf.join(';')))
         .then(res => {
+            console.log(res['url']);
+            console.log(res['status']);
+            console.log(res['statusText']);
+            console.log('');
             return res.json();
         })
         .then(data => {
             if (data['status'] == "FAILED") {
-                return waitPromise(500).then(function(res) {
+                return waitPromise(waitTime).then(function(res) {
                     return fetchRatings(retries - 1);
                 });
             }
@@ -75,7 +86,7 @@ function fetchRatings(retries = 25) {
             }
         })
         .catch(err => {  
-            return waitPromise(500).then(function(res) {
+            return waitPromise(waitTime).then(function(res) {
                 return fetchRatings(retries - 1);
             });
         })
@@ -95,14 +106,18 @@ function fetch_user(mode, i, retries = 25) {
         }
     })(mode);
     
-    return timeout(2000, fetch(url))
+    return timeout(maxTime, fetch(url))
         .then(res => {
+            console.log(res['url']);
+            console.log(res['status']);
+            console.log(res['statusText']);
+            console.log('');
             return res.json();
         })
-        .then(data => {
+        .then(data => {            
             if (mode == 'cf') {
                 if (data['status'] == "FAILED") {
-                    return waitPromise(500).then(function(res) {
+                    return waitPromise(waitTime).then(function(res) {
                         return fetch_user(mode, i, retries - 1);
                     });
                 }
@@ -116,7 +131,7 @@ function fetch_user(mode, i, retries = 25) {
                 icpc_ac[i] = data[0]['ac'], icpc_ac_newest[i] = data[0]['activity'][1];
         })
         .catch(err => {
-            return waitPromise(500).then(function(res) {
+            return waitPromise(waitTime).then(function(res) {
                 return fetch_user(mode, i, retries - 1);
             });
         });
@@ -193,7 +208,7 @@ function print_data() {
         });
     }
     var json = JSON.stringify(obj);
-    fs.writeFile('/home1/studenti/pnikic/public_html/ldr/results.json', json, 'utf8', () => {});
+    fs.writeFile(result_path + out_file, json, 'utf8', () => {});
 
     // Last 7 days results
     scores = Array.from(user_name, x => 0);
@@ -215,24 +230,15 @@ function print_data() {
         });
     }
     var json = JSON.stringify(obj);
-    fs.writeFile('/home1/studenti/pnikic/public_html/ldr/results_newest.json', json, 'utf8', () => {});
+    fs.writeFile(result_path + out_newest_file , json, 'utf8', () => {});
     
     // Log data about last update
-    fs.writeFile('/home1/studenti/pnikic/public_html/ldr/results_time.txt', Date(), () => {
+    fs.writeFile(result_path + out_time_file, Date(), () => {
         success = true;
     });
 }
 
-// Main
-setInterval(function() {
-    if (!success) {
-        var msg = Date() + '\n' + 'There is some problem with the servers\n' +
-            ' CF: ' + String(cf_ac.map(x => x.size)) +
-            '\nUVa: ' + String(uva_ac) +
-            '\nCF_ratings: ' + String(done_rat) + '\n';
-        fs.writeFile(log_file, msg, {flag : 'a'}, () => {});
-    }
-
+function main_call() {
     // New iteration of fetching data
     success = false;
     done_rat = 0;
@@ -241,7 +247,7 @@ setInterval(function() {
     fetchRatings()
         .catch(err => {
             var msg = Date() + '\n' + 'Error: Fetching user ratings\n';
-            fs.writeFile(log_file, msg, {flag : 'a'}, () => {});
+            fs.writeFile(result_path + log_file, msg, {flag : 'a'}, () => {});
         });
     
     for (var i = 0; i < user_name.length; ++i) {
@@ -249,28 +255,32 @@ setInterval(function() {
             fetch_user('cf', i)
             .catch(err => {
                 var msg = Date() + '\n' + 'Error: Fetching CF user: ' + err + '\n';
-                fs.writeFile(log_file, msg, {flag : 'a'}, () => {});
+                fs.writeFile(result_path + log_file, msg, {flag : 'a'}, () => {});
             });
 
         if (user_uva[i].length > 0)
             fetch_user('uva', i)
             .catch(err => {
                 var msg = Date() + '\n' + 'Error: Fetching UVa user: ' + err + '\n';
-                fs.writeFile(log_file, msg, {flag : 'a'}, () => {});
+                fs.writeFile(result_path + log_file, msg, {flag : 'a'}, () => {});
             });
         
         if (user_icpc[i].length > 0)
             fetch_user('icpc', i)
             .catch(err => {
                 var msg = Date() + '\n' + 'Error: Fetching UVa ICPC user: ' + err + '\n';
-                fs.writeFile(log_file, msg, {flag : 'a'}, () => {});
+                fs.writeFile(result_path + log_file, msg, {flag : 'a'}, () => {});
             });
     }
-}, 60000)
+
+    setTimeout(main_call, 3 * 60000);
+}
+
+main_call();
 
 setInterval(function() {
     // Regular interval check if all data is fetched    
-    if (!success) {        
+    if (!success) {
         var good = 0;
         for (var i = 0; i < done.length; ++i) {
             if (user_cf[i].length > 2)
@@ -283,10 +293,9 @@ setInterval(function() {
             parse_ratings_data(ratings_data, function() {
                 parse_user_data(cf_user_data, print_data);
             });
-            
-            // setTimeout(() => {
-            //     print_data(); // Usually triggers 'success = true'
-            // }, 3000);
+
+            var msg = Date() + ' - ' + 'The main call was successful.\n';
+            fs.writeFile(result_path + log_file, msg, {flag : 'a'}, () => {});
         }
     }
-}, 1000)
+}, 5000)

@@ -1,2 +1,3 @@
 [ ] Ensure no crashes (for each function call)
 [ ] Sorting contestants according to rating
+[ ] Pokušati (eksponencijalno) veći waitTime
