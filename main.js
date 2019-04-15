@@ -3,7 +3,7 @@ const fs = require('fs');
 const log_file = 'LOG.txt'
 const result_path = ''
 const out_file = 'results.json';
-const out_newest_file = 'result_newest.json';
+const out_newest_file = 'results_newest.json';
 const out_time_file = 'results_time.txt';
 const waitTime = 2000; // Waiting time between two successive requests
 const maxTime = 2000; // Maximum time for a request
@@ -68,10 +68,6 @@ function fetchRatings(retries = 25) {
     // user_cf.filter(Boolean)
     return timeout(maxTime, fetch('https://codeforces.com/api/user.info?handles=' + user_cf.join(';')))
         .then(res => {
-            console.log(res['url']);
-            console.log(res['status']);
-            console.log(res['statusText']);
-            console.log('');
             return res.json();
         })
         .then(data => {
@@ -108,10 +104,6 @@ function fetch_user(mode, i, retries = 25) {
     
     return timeout(maxTime, fetch(url))
         .then(res => {
-            console.log(res['url']);
-            console.log(res['status']);
-            console.log(res['statusText']);
-            console.log('');
             return res.json();
         })
         .then(data => {            
@@ -216,7 +208,6 @@ function print_data() {
         scores[i] = cf_ac_newest[i].size + uva_ac_newest[i] + icpc_ac_newest[i];
     
     sort_with_indices(scores);
-
     obj = {table: []};
     for (var i = 0; i < user_name.length; ++i) {
         var c = scores.sortIndices[i];
