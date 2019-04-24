@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
-const log_file = 'LOG.txt'
-const result_path = ''
+const log_file = 'LOG.txt';
+const result_path = '';
 const out_file = 'results.json';
 const out_newest_file = 'results_newest.json';
 const out_time_file = 'results_time.txt';
@@ -206,7 +206,7 @@ function print_data() {
     scores = Array.from(user_name, x => 0);
     for (var i = 0; i < user_name.length; ++i)
         scores[i] = cf_ac_newest[i].size + uva_ac_newest[i] + icpc_ac_newest[i];
-    
+
     sort_with_indices(scores);
     obj = {table: []};
     for (var i = 0; i < user_name.length; ++i) {
@@ -234,7 +234,9 @@ function main_call() {
     success = false;
     done_rat = 0;
     done = Array.from(user_cf, x => 0)
-    
+    cf_ac = Array.from(user_name, x => new Set())
+	cf_ac_newest = Array.from(user_name, x => new Set())
+
     fetchRatings()
         .catch(err => {
             var msg = Date() + '\n' + 'Error: Fetching user ratings\n';
@@ -264,7 +266,7 @@ function main_call() {
             });
     }
 
-    setTimeout(main_call, 3 * 60000);
+    setTimeout(main_call, 4 * 60000);
 }
 
 main_call();
@@ -289,4 +291,4 @@ setInterval(function() {
             fs.writeFile(result_path + log_file, msg, {flag : 'a'}, () => {});
         }
     }
-}, 5000)
+}, 5 * 1000)
