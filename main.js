@@ -235,7 +235,7 @@ function main_call() {
     done_rat = 0;
     done = Array.from(user_cf, x => 0)
     cf_ac = Array.from(user_name, x => new Set())
-	cf_ac_newest = Array.from(user_name, x => new Set())
+    cf_ac_newest = Array.from(user_name, x => new Set())
 
     fetchRatings()
         .catch(err => {

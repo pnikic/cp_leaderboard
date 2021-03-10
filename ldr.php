@@ -95,7 +95,7 @@ foreach ($res['table'] as $i) {
     echo '<tr><td>'
        . $i[user] . '</td><td>'
        . $i[cf_rating] . '</td><td class="ac"><div class="ttip"><span class="dotted">'
-       . $i[score] . '</span><span class="text">CF&nbsp;'
+       . $i[score] . '</span><span class="text">CF:&nbsp;'
        . $i[cf_ac] . '<br/>uHunt:&nbsp;'
        . $i[uva_ac] . '<br/>uHunt ICPC:&nbsp;'
        . $i[icpc_ac] . '</span></div></td></tr>';
@@ -121,7 +121,7 @@ foreach ($res['table'] as $i) {
     echo '<tr><td>'
        . $i[user] . '</td><td>'
        . $i[cf_rating] . '</td><td class="ac"><div class="ttip"><span class="dotted">'
-       . $i[score] . '</span><span class="text">CF&nbsp;'
+       . $i[score] . '</span><span class="text">CF:&nbsp;'
        . $i[cf_ac] . '<br/>uHunt:&nbsp;'
        . $i[uva_ac] . '<br/>uHunt ICPC:&nbsp;'
        . $i[icpc_ac] . '</span></div></td></tr>';
